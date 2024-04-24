@@ -6,9 +6,9 @@ The part of SpectralConv2d is written by Zongyi Li(1) and we
 sub_list = [2**2, 2**1, 2**0]
 sub = sub_list[0] ## modify this parameter to complete the whole example
 
-data_PATH = '../data/burgers2d.mat'
+data_PATH = '../data/burgers2d.mat' # data path
 file_name = 'opno2d'+str(sub)
-result_PATH = '../model/' + file_name + '.pkl'
+result_PATH = '../model/' + file_name + '.pkl' # model path for saving
 
 import sys
 sys.path.append("..")
@@ -20,7 +20,7 @@ np.random.seed(0)
 torch.cuda.manual_seed(0)
 torch.backends.cudnn.deterministic = True
 
-
+#### Hyper-parameters
 epochs = 3000
 batch_size = 20
 learning_rate = 0.001
@@ -32,20 +32,20 @@ train_size, test_size = 1000, 100
 degree = 16
 width = 24
 
-
+#### Default values
 torch.manual_seed(0)
 np.random.seed(0)
 #if device == torch.device('cuda'):
 torch.cuda.manual_seed(0)
 torch.backends.cudnn.deterministic = True
 
-
 print('batch_size', batch_size, 'learning_rate', learning_rate, 'epochs', epochs)
 print('weight_decay', weight_decay, 'width', width, 'degree', degree, 'sub', sub)
 
-## main
+#### main
 model = OPNO2d(degree, degree, width).to(device)
 
+#### Load data
 print('supervising data loaded! PATH = ' + data_PATH)
 raw_data = h5py.File(data_PATH, 'r')
 x_data, y_data = raw_data['u_cgl'][..., 0], raw_data['u_cgl']
@@ -55,9 +55,9 @@ data_size, Nx, Ny = x_data.shape
 print('data size = ', data_size, 'Nx = ', Nx, '*', Ny)
 x_data, y_data = x_data.reshape(-1, Nx, Ny, 1), y_data.reshape(-1, Nx, Ny, 3)
 
+# Chebyshev grid
 grid_x = -torch.cos(torch.linspace(0, np.pi, Nx, dtype=torch.float64)).view(1, Nx, 1, 1)
 grid_y = -torch.cos(torch.linspace(0, np.pi, Ny, dtype=torch.float64)).view(1, 1, Ny, 1)
-
 x_data = torch.cat([x_data.view(data_size, Nx, Ny, 1)
                        , grid_x.repeat(data_size, 1, Ny, 1), grid_y.repeat(data_size, Nx, 1, 1)], dim=-1)
 x_data = x_data.view(data_size, Nx, Ny, 3)
@@ -80,7 +80,6 @@ scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=step_size, gamm
 train_list, loss_list = [], []
 
 myloss = LpLoss(size_average=False)
-
 
 if epochs == 0: #load model
     print('model:'+result_PATH+' loaded!')

@@ -42,7 +42,7 @@ def cmp_decrease(a, res_return=False):
     # res = b[..., :2] - a[..., :2]
     # b[..., :2] = a[..., :2]
 
-    return (b,res) if res_return else b
+    return b
 
 def cmp_neumann(a):
     Nx = a.shape[-1]
@@ -236,4 +236,4 @@ def cheb_partial(u, d):
     u = torch.transpose(u, d, total_dim-1)
     return u
 
-Dx = cheb_partial;
+Dx = cheb_partial

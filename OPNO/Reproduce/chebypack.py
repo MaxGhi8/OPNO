@@ -124,6 +124,24 @@ def icmp_robin(b):
 
     return a
 
+def Wrapper(func_list, u, dim):
+    # a wrapper to apply a list of function on given axises.
+    # the func will be applied in turn.
+    if type(dim) == int:
+        dim = [dim]
+    total_dim = u.dim()
+
+    for d in dim:
+        if (d != total_dim-1) and (d != -1):
+            u = torch.transpose(u, d, -1)
+
+        for func in func_list:
+            u = func(u)
+
+        if (d != total_dim-1) and (d != -1):
+            u = torch.transpose(u, d, -1)
+    return u
+
 def cheb_partial(u, d, truc = None):
     Nx, total_dim = u.shape[d], u.dim()
     if d != total_dim-1 and d != -1:

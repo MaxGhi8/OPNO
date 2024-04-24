@@ -1,18 +1,14 @@
 """
 This code is written by Ziyuan Liu, you may contact us through liuziyuan17@nudt.edu.cn
-T
 """
-import os
+
 from torch.utils.data import DataLoader
 from timeit import default_timer
 from utilities import *
-from copy import deepcopy
 import h5py
-from scipy.io import loadmat
 import chebypack as ch
 import functools
 
-import matplotlib
 x2phi = functools.partial(ch.Wrapper, [ch.dct, ch.cmp_neumann])
 phi2x = functools.partial(ch.Wrapper, [ch.icmp_neumann, ch.idct])
 idctn = functools.partial(ch.Wrapper, [ch.idct])
@@ -167,10 +163,10 @@ if __name__ == '__main__':
         print("data_shape", x_data.shape, y_data.shape)
 
 
-        train_loader = torch.utils.data.DataLoader(
+        train_loader = DataLoader(
             torch.utils.data.TensorDataset(x_data[:train_size, ...], y_data[:train_size, ...]), batch_size=batch_size,
             shuffle=True)
-        test_loader = torch.utils.data.DataLoader(
+        test_loader = DataLoader(
             torch.utils.data.TensorDataset(x_data[-test_size:, ...], y_data[-test_size:, ...]), batch_size=batch_size,
             shuffle=False)
 
