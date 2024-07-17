@@ -35,22 +35,25 @@ class PseudoSpectra2d(nn.Module):
 
     def quasi_diag_mul2d(self, input, weights):
         xpad = self.unfold(input)
-        return torch.einsum("bix, iox->box", xpad, weights)
+        return torch.einsum("bix, iox -> box", xpad, weights)
         # return torch.einsum("bixw, xiow->box", xpad, weights)
 
     def forward(self, u):
         batch_size, width, Nx, Ny = u.shape
 
+        # FDCT
         a = dctn(u, [-1, -2])
 
+        # Quasi-diagonal scaling (with bandwidth)
         b = torch.zeros(batch_size, self.out_channels, Nx, Ny, device=u.device, dtype=torch.float64)
         b[..., :self.degree1, :self.degree2] = \
             self.quasi_diag_mul2d(a[..., :self.degree1+2, :self.degree2+2], self.weights).reshape(
                 batch_size, self.out_channels, self.degree1, self.degree2)
 
+        # IDCT
         u = phi2x(b, [-1, -2])
-        return u
 
+        return u
 
 class OPNO2d(nn.Module):
     def __init__(self, degree1, degree2, width):
@@ -85,24 +88,22 @@ class OPNO2d(nn.Module):
         return F.gelu(x)
 
     def forward(self, x):
-        # x : (batches, nx, ny, [Einc(x, y), cnt(x, y), x, y])
+        # x : (batches, nx, ny, [cnt(x, y), x, y])
 
         x = x.permute(0, 3, 1, 2)
-
-        x = torch.cat([x, self.acti(self.convl(x))], dim=1)
+        x = torch.cat([x, self.acti(self.convl(x))], dim=1) # (batches, [cnt(x, y), x, y, Einc(x, y)], nx, ny)
 
         x = x+self.acti(self.w0(x) + self.conv0(x))
-
         x = x+self.acti(self.w1(x) + self.conv1(x))
-
         x = x+self.acti(self.w2(x) + self.conv2(x))
-
         x = x+self.acti(self.w3(x) + self.conv3(x))
 
-        x = x.permute(0, 2, 3, 1)
+        x = x.permute(0, 2, 3, 1) # (batches, nx, ny, d_v)
         x = self.fc1(x)
         x = self.acti(x)
-        x = self.fc2(x)
+        x = self.fc2(x) # (batches, nx, ny, d_o)
+        
+        # impose bondary condition
         x = phi2x(x2phi(x, [1, 2]), [1, 2])
 
         return x
@@ -110,7 +111,6 @@ class OPNO2d(nn.Module):
 if __name__ == '__main__':
 
     #### parameters settings
-
     torch.manual_seed(0)
     np.random.seed(0)
     if device == torch.device('cuda'):

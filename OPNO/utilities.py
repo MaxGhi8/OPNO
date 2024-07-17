@@ -35,21 +35,21 @@ class LpLoss(object):
         self.reduction = reduction
         self.size_average = size_average
 
-    def abs(self, x, y):
-        num_examples = x.size()[0]
+    # def abs(self, x, y):
+        #num_examples = x.size()[0]
 
-        #Assume uniform mesh
-        h = 1.0 / (x.size()[1] - 1.0)
+        ##Assume uniform mesh
+        #h = 1.0 / (x.size()[1] - 1.0)
 
-        all_norms = (h**(self.d/self.p))*torch.norm(x.view(num_examples,-1) - y.view(num_examples,-1), self.p, 1)
+        #all_norms = (h**(self.d/self.p))*torch.norm(x.view(num_examples,-1) - y.view(num_examples,-1), self.p, 1)
 
-        if self.reduction:
-            if self.size_average:
-                return torch.mean(all_norms)
-            else:
-                return torch.sum(all_norms)
+        #if self.reduction:
+            #if self.size_average:
+                #return torch.mean(all_norms)
+            #else:
+                #return torch.sum(all_norms)
 
-        return all_norms
+        #return all_norms
 
     def rel(self, x, y):
         num_examples = x.size()[0]

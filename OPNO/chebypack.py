@@ -13,8 +13,9 @@ def dct(u):
 def idct(a):
     Nx = a.shape[-1]
 
-    a[..., 0] *= 2; a[..., Nx-1] *= 2
-    V = torch.cat([a, a.flip(dims=[-1])[..., 1:Nx-1]], dim=-1)
+    v = a.clone()
+    v[..., (0, Nx-1)] *= 2
+    V = torch.cat([v, v.flip(dims=[-1])[..., 1:Nx-1]], dim=-1)
     u = torch.fft.fft(V, dim=-1)[..., :Nx].real / 2
     return u
 
@@ -30,7 +31,7 @@ def cmp(a):
     # b[..., -2:] = 0
     return b
 
-def cmp_decrease(a, res_return=False):
+def cmp_decrease(a):
     Nx = a.shape[-1]
 
     sgn = torch.zeros(*a.shape[:-1], 2*Nx, dtype=a.dtype, device=a.device)
@@ -203,37 +204,50 @@ def cheb_partial(u, d):
     return u
 """
 
-def cheb_partial(u, d):
+def cheb_partial(u, d, truc = None):
     Nx, total_dim = u.shape[d], u.dim()
-    if d != total_dim-1:
+    if d != total_dim-1 and d != -1:
         u = torch.transpose(u, d, total_dim-1)
 
-    tmp = torch.cat([u, u.flip(dims=[-1])[..., 1:Nx-1]], dim=-1)
-
-    a = torch.fft.ifft(tmp, dim=-1) * 2
-    a = torch.real(a[..., :Nx])
-    a[..., 0] /= 2; a[..., Nx-1] /= 2
-
-    #a = a[..., 1:] # make sure that N=2^k for FFT
+    V = torch.cat([u, u.flip(dims=[-1])[..., 1:Nx-1]], dim=-1)
+    a = torch.fft.ifft(V, dim=-1)[..., :Nx].real
+    a[..., 1:Nx-1] *= 2
 
     a *= 2 * torch.linspace(0, Nx-1, Nx, dtype=torch.float64, device=u.device)
-    sgn = torch.zeros(*a.shape[:-1], 2*Nx, device=a.device, dtype=torch.float64)
-    sgn[..., Nx//2*2+3::2] = 1
+    sgn = torch.zeros(2*Nx, device=a.device, dtype=torch.float64)
+    sgn[..., Nx//2*2+1::2] = 1
 
     b = torch.fft.irfft(torch.fft.rfft(sgn, n=2*Nx, dim=-1)
                         * torch.fft.rfft(a, n=2*Nx, dim=-1), dim=-1)[..., :Nx]
+
+    if truc != None:
+        b[..., truc:] = 0
+
     b[..., 0] /= 2
     #b[..., Nx-1] = 0
 
     a = b
 
-    a[..., 0] *= 2; a[..., Nx-1] *= 2
+    a[..., 1:Nx-1] /= 2
+    V = torch.cat([a, a.flip(dims=[-1])[..., 1:Nx - 1]], dim=-1)
+    u = torch.fft.fft(V, dim=-1)[..., :Nx].real# / 2
 
-    tmp = torch.cat([a, a.flip(dims=[-1])[..., 1:Nx - 1]], dim=-1)
-    u = torch.fft.fft(tmp, dim=-1) / 2
-    u = torch.real(u[..., :Nx])
-
-    u = torch.transpose(u, d, total_dim-1)
+    if d != total_dim-1 and d != -1:
+        u = torch.transpose(u, d, total_dim-1)
     return u
 
-Dx = cheb_partial
+Dx = cheb_partial;
+
+
+def cmp_UpperDirichlet(a):
+    b = a.cumsum(dim=-1)
+    b[..., -2] = -a[..., -1]
+    b[..., -1] = 0
+    return b
+
+def icmp_UpperDirichlet(b):
+    a = torch.zeros_like(b)
+    a[..., 1:-1] = b[..., 1:-1] - b[..., :-2]
+    a[..., 0] = b[..., 0]
+    a[..., -1] = -b[..., -2]
+    return a

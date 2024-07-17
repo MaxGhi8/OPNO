@@ -14,12 +14,6 @@ import sys
 sys.path.append("..")
 from OPNO2d import *
 
-torch.manual_seed(0)
-np.random.seed(0)
-#if device == torch.device('cuda'):
-torch.cuda.manual_seed(0)
-torch.backends.cudnn.deterministic = True
-
 #### Hyper-parameters
 epochs = 3000
 batch_size = 20
@@ -29,7 +23,7 @@ gamma = 0.5  # for StepLR
 weight_decay = 1e-4
 train_size, test_size = 1000, 100
 
-degree = 16
+degree = 16 # degree corrispond to modes in my original code
 width = 24
 
 #### Default values
@@ -98,7 +92,7 @@ for ep in range(epochs):
         optimizer.zero_grad()
         out = model(x)
 
-        mse = F.mse_loss(out.reshape(batch_size, -1), y.view(batch_size, -1), reduction='mean')
+        mse = F.mse_loss(out.reshape(batch_size, -1), y.view(batch_size, -1), reduction='mean') # here we use the mean, but after divide by the length of the train loader
         # mse.backward()
         l2 = myloss(out.reshape(batch_size, -1), y.view(batch_size, -1))
         l2.backward()
@@ -125,26 +119,27 @@ for ep in range(epochs):
     loss_list.append(test_l2)
 
     t2 = default_timer()
+    # print at the end of each epoch
     if (ep + 1) % 1 == 0:
         print(ep, str(t2 - t1)[:4], optimizer.state_dict()['param_groups'][0]['lr'], \
               train_mse, train_l2, test_l2)
 
+# evaluation of the test set without bratch loader (all in once)
 x, y = x_data[-test_size:, ...].to(device), y_data[-test_size:, ...]
 with torch.no_grad():
     yy = model(x).reshape(test_size, Nx, Nx, 3).cpu()
-j = -1
 
+# evaluation of the boundary condition (in this case the nuemann boundary condition) at the end of training
 p = ch.cheb_partial(yy, 1)
 p = p[:, (0, -1), :, :].reshape(test_size, -1)
 ans1, _ = torch.max(torch.abs(p), dim=1)
 p = ch.cheb_partial(yy, 2)
 p = p[:, :, (0, -1), :].reshape(test_size, -1)
 ans2, _ = torch.max(torch.abs(p), dim=1)
-
 ans, _ = torch.max(torch.vstack([ans1, ans2]), dim=0)
-
 print(torch.mean(ans))
 
+# save the model
 if epochs >= 3000:
     torch.save({
         'model':model.state_dict(), 'batch_size': batch_size, 'learning_rate': learning_rate, 'epochs': epochs,

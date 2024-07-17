@@ -97,6 +97,7 @@ class OPNO(nn.Module):
         x = phi2x(x2phi(x, -2), -2)
 
         batch_size, Nx, _ = x.shape
+
         # Expanding basis with \phi_{N-2} = 1/2(T_0 \pm T_1)
         compensator = (self.uL+self.uR)/2 + (self.uR-self.uL)/2 * (-torch.cos( \
             torch.linspace(0, np.pi, Nx, dtype=torch.float64, device=device))).reshape(1, Nx, 1)

@@ -35,6 +35,7 @@ print('weight_decay', weight_decay, 'width', width, 'degree', degree, 'sub', sub
 
 ## main
 model = OPNO(degree, width).to(device)
+print('model parameters number =', count_params(model))
 
 print('supervising data loaded! PATH = ' + data_PATH)
 raw_data = h5py.File(data_PATH, 'r')
@@ -56,8 +57,6 @@ train_loader = torch.utils.data.DataLoader(
 test_loader = torch.utils.data.DataLoader(
     torch.utils.data.TensorDataset(x_data[-test_size:, :, :], y_data[-test_size:, :]), batch_size=batch_size,
     shuffle=False)
-
-print('model parameters number =', count_params(model))
 
 # optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate, weight_decay=weight_decay)
 from Adam import Adam
